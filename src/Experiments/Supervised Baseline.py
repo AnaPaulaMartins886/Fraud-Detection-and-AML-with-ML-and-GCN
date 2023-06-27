@@ -1,0 +1,6 @@
+from Functions.GeneralFunctions import run_supervised_baseline
+
+
+supervised_baseline_results = run_supervised_baseline()
+
+
