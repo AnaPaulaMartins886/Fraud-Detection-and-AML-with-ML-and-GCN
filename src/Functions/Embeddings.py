@@ -1,5 +1,5 @@
 import pandas as pd
-import random
+import numpy as np
 import networkx as nx
 
 from karateclub import DeepWalk
@@ -57,40 +57,59 @@ def create_embedding_dataframe(node_ids, node_embeddings, graph):
 
 
 def run_node2vec(graphs):
-    # Randomly assign parameters
-    dimensions = 100
-    p = random.uniform(0.5, 2)
-    q = random.uniform(0.1, 1)
-    walk_length = random.randint(10, 200)
-    walk_number = random.randint(20, 80)
-    epochs = 1000
-    
-    # Print the randomly assigned parameters
-    print("Randomly assigned parameters:")
-    print("Dimensions:", dimensions)
-    print("p:", p)
-    print("q:", q)
-    print("Walk Length:", walk_length)
-    print("Walk Number:", walk_number)
-    print("epochs: ", epochs)
- 
-    print()
-    
-    # Initiate Node2Vec Model
-    model = Node2Vec(dimensions=dimensions, p=p, q=q, walk_length=walk_length, walk_number=walk_number, epochs=epochs)
-
-    # Get embeddings for each graph
     all_embeddings = []
+
+    np.random.seed(8347658)
+    
     
     for timestep, graph in graphs.items():
+        
+        random_state = np.random.randint(0, 10000)
         print(f"Running Node2Vec on timestep {timestep}/{len(graphs)}")
         graph = nx.convert_node_labels_to_integers(graph, first_label=0)
+
+        model = Node2Vec(seed = random_state)
 
         model.fit(graph)
         node_ids = list(graph.nodes())
         node_embeddings = model.get_embedding()
         embeddings = create_embedding_dataframe(node_ids, node_embeddings, graph)
         all_embeddings.append(embeddings)
+
+    # Concatenate embeddings for all timesteps
+    df_embeddings = pd.concat(all_embeddings)
+
+    return df_embeddings
+
+
+def run_deepwalk(graphs):
+    # Get embeddings for each graph
+    all_embeddings = []
+
+    np.random.seed(8347658)
+    
+    
+    for timestep, graph in graphs.items():
+        
+        random_state = np.random.randint(0, 10000)
+        
+        print(f"Running DeepWalk on timestep {timestep}/{len(graphs)}")
+
+        # Create a Node2Vec object with your graph data
+        model = DeepWalk(seed = random_state)
+            
+        # Get the node IDs and embeddings as arrays
+        model.fit(graph)
+        
+        
+        node_ids = list(graph.nodes())
+        node_embeddings = model.get_embedding()
+        embeddings = create_embedding_dataframe(node_ids, node_embeddings, graph)
+        all_embeddings.append(embeddings)
+
+    # Concatenate embeddings for all timesteps
+    df_embeddings = pd.concat(all_embeddings)
+
 
     # Concatenate embeddings for all timesteps
     df_embeddings = pd.concat(all_embeddings)
@@ -109,7 +128,23 @@ def get_node2vec_embeddings(graphs):
     print("Running Node2Vec Complete")    
     
     # Save the DataFrame as a CSV file
-    embeddings.to_csv("Embeddings/node2vec_embeddings3.csv", index=False)
+    embeddings.to_csv("Embeddings/node2vec_embeddings.csv", index=False)
+
+    return embeddings
+
+
+def get_deepwalk_embeddings(graphs):
+    
+    print("------------------------------------------DEEPWALK-----------------------------------------------------")
+    print()
+    
+    # Get embeddings and split into different datasets
+    print("Running DeepWALK")
+    embeddings = node2vec_embeddings = run_node2vec(graphs)
+    print("Running DeepWAlk Complete")    
+    
+    # Save the DataFrame as a CSV file
+    embeddings.to_csv("Embeddings/deepwalk_embeddings.csv", index=False)
 
     return embeddings
 
@@ -180,9 +215,32 @@ def split_data(data):
     return (X_train, y_train, x_test, y_test)
 
 
-def run_node2vec_experiment(num_runs=5):
+def run_node2vec_experiment(num_runs=1):
     
-    embeddings = pd.read_csv("Embeddings/node2vec_embeddings3.csv")
+    embeddings = pd.read_csv("Embeddings/node2vec_embeddings.csv")
+    
+    print()
+    print("------------------------------------------ML MODELS-----------------------------------------------------")
+    print()
+    
+    print("Split Datasets")
+    datasets = get_datasets_embeddings(embeddings, only_labeled = True)
+
+    # Run experiments on each dataset
+    results = []
+    for dataset_name, dataset in datasets.items():
+        dataset_results = run_classifiers(dataset, dataset_name, num_runs)
+        results.append(dataset_results)
+
+    # Combine results into a single DataFrame
+    results_df = pd.concat(results, ignore_index=True)
+    
+    return results_df
+
+
+def run_deepwalk_experiment(num_runs=1):
+    
+    embeddings = pd.read_csv("Embeddings/deepwalk_embeddings.csv")
     
     print()
     print("------------------------------------------ML MODELS-----------------------------------------------------")

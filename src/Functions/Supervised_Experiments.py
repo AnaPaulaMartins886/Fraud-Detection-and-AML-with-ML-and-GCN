@@ -10,9 +10,7 @@ from sklearn.preprocessing import MinMaxScaler
 from Preprocessing import read_data_supervised, get_data, get_data_gcn, build_graphs_by_timestep
 from Visualizations import plot_f1_by_timestep, draw_plot
 
-features_file_path = "elliptic_bitcoin_dataset/elliptic_txs_features.csv"
-classes_file_path = "elliptic_bitcoin_dataset/elliptic_txs_classes.csv"
-edges_file_path = "elliptic_bitcoin_dataset/elliptic_txs_edgelist.csv"
+from config import features_file_path, classes_file_path, edges_file_path
 
 
 def split_data(data):
